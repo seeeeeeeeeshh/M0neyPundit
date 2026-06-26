@@ -1,0 +1,65 @@
+node_modules/
+.next/
+out/
+dist/
+build/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Debug logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Telegram session files (contain auth tokens)
+*.session
+**/*.session
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+.eggs/
+venv/
+env/
+.venv/
+.env/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Supabase
+supabase/.temp/
+
+# Testing
+coverage/
+.nyc_output/
+
+# Misc
+.cache/
+.temp/
+tmp/
+temp/
