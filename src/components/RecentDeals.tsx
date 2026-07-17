@@ -61,7 +61,6 @@ export default function RecentDeals() {
               isPopular: d.is_popular ?? d.isPopular ?? false,
             }));
             setDeals(normalized);
-            return;
           }
         }
       } catch (err) {

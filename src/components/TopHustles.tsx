@@ -75,7 +75,6 @@ export default function TopHustles() {
               isFeatured: h.isFeatured ?? false,
             }));
             setHustles(cleaned.slice(0, 3)); // Only show top 3
-            return;
           }
         }
       } catch (err) {

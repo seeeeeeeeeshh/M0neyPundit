@@ -92,7 +92,6 @@ export default function HustlesPage() {
           }
           setTotalCount(data.total || cleaned.length);
           setHasMore(data.hasMore || false);
-          return;
         }
       }
     } catch (err) {

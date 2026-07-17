@@ -111,7 +111,6 @@ export default function DealsPage() {
           }
           setTotalCount(data.pagination?.total || normalized.length);
           setHasMore(data.pagination?.hasMore || false);
-          return;
         }
       }
     } catch (err) {
