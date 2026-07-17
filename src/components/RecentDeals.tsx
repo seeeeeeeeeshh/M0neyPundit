@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { deals as seedDeals } from "@/lib/seed-data";
 import { Tag, Flame } from "lucide-react";
+import { cleanDescription } from "@/lib/text-utils";
 
 interface Deal {
   _id: string;
@@ -18,7 +19,7 @@ interface Deal {
   imageUrl?: string;
 }
 
-// Strip markdown/formatting characters from text
+// Strip markdown/formatting characters from text (legacy)
 function cleanText(text: string): string {
   if (!text) return '';
   return text
@@ -47,7 +48,8 @@ export default function RecentDeals() {
             const normalized = data.deals.map((d: any) => ({
               _id: String(d.id || d._id || d.telegram_id),
               title: cleanText(d.title || 'Untitled Deal'),
-              description: cleanText(d.description || ''),
+              // Clean description by removing title duplication and arrow chains
+              description: cleanDescription(d.description || '', d.title || 'Untitled Deal'),
               discount: d.discount || 'Deal',
               category: d.category || 'other',
               location: d.location || d.merchant,
@@ -115,7 +117,9 @@ export default function RecentDeals() {
               {deal.isPopular && <Flame className="w-4 h-4 text-accent flex-shrink-0 mt-0.5" />}
               <div className="flex-1 min-w-0">
                 <h3 className="text-sm font-medium truncate">{deal.title}</h3>
-                <p className="text-xs text-gray-400 mt-0.5 line-clamp-2">{deal.description}</p>
+                <p className="text-xs text-gray-400 mt-0.5 line-clamp-2">
+                  {deal.description || 'Check out this deal!'}
+                </p>
                 <div className="flex items-center gap-2 mt-2">
                   <span className="badge badge-success">{deal.discount}</span>
                   {deal.location && (

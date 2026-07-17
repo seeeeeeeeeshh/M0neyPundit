@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { deals as seedDeals } from "@/lib/seed-data";
 import { Tag, Flame, Search, MapPin, Calendar, RefreshCw } from "lucide-react";
+import { cleanDescription } from "@/lib/text-utils";
 
 type DealCategory = "all" | "food" | "tech" | "events" | "transport";
 
@@ -47,16 +48,16 @@ const categoryLabels: Record<DealCategory, string> = {
   transport: "Transport",
 };
 
-// Strip markdown/formatting characters from text
+// Strip markdown/formatting characters from text (legacy)
 function cleanText(text: string): string {
   if (!text) return '';
   return text
-    .replace(/^\*+|^__+|^\^+|^[!"#$%&'()*+,./:;<=>?@\[\\\]^`{|}~]+/g, '') // leading chars
-    .replace(/\*+$|__+$|\^+$|[!"#$%&'()*+,./:;<=>?@\[\\\]^`{|}~]+$/g, '') // trailing chars
-    .replace(/\*\*/g, '') // double bold markers
-    .replace(/\*/g, '') // single bold markers
-    .replace(/__/g, '') // italic markers
-    .replace(/__/, '') // single italic markers
+    .replace(/^\*+|^__+|^\^+|^[!"#$%&'()*+,./:;<=>?@\[\\\]^`{|}~]+/g, '')
+    .replace(/\*+$|__+$|\^+$|[!"#$%&'()*+,./:;<=>?@\[\\\]^`{|}~]+$/g, '')
+    .replace(/\*\*/g, '')
+    .replace(/\*/g, '')
+    .replace(/__/g, '')
+    .replace(/__/, '')
     .trim();
 }
 
@@ -84,7 +85,8 @@ export default function DealsPage() {
           const normalized = data.deals.map((d: any) => ({
             _id: String(d.id || d._id || d.telegram_id),
             title: cleanText(d.title || 'Untitled Deal'),
-            description: cleanText(d.description || ''),
+            // Clean description by removing title duplication and arrow chains
+            description: cleanDescription(d.description || '', d.title || 'Untitled Deal'),
             discount: d.discount || 'Deal',
             category: d.category || 'other',
             location: d.location || d.merchant,
@@ -332,7 +334,9 @@ function DealCard({ deal, isPopular }: { deal: any; isPopular?: boolean }) {
       <h3 className="font-semibold group-hover:text-primary transition-colors mb-1">
         {deal.title}
       </h3>
-      <p className="text-sm text-gray-400 line-clamp-2 mb-3">{deal.description}</p>
+      <p className="text-sm text-gray-400 line-clamp-2 mb-3">
+        {deal.description ? deal.description : 'Check out this deal!'}
+      </p>
 
       <div className="flex items-center gap-2 flex-wrap">
         <span className="badge badge-success">{deal.discount}</span>

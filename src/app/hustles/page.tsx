@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Search, DollarSign, Clock, MapPin, Star, Zap, Mail } from "lucide-react";
+import { cleanDescription } from "@/lib/text-utils";
 
 interface Hustle {
   id: number;
@@ -19,19 +20,6 @@ interface Hustle {
 }
 
 type HustleType = "all" | "part-time" | "freelance" | "tutoring" | "gig" | "full-time" | "internship" | "remote";
-
-// Strip markdown/formatting characters from text
-function cleanText(text: string): string {
-  if (!text) return '';
-  return text
-    .replace(/^\*+|^__+|^\^+|^[!"#$%&'()*+,./:;<=>?@\[\\\]^`{|}~]+/g, '')
-    .replace(/\*+$|__+$|\^+$|[!"#$%&'()*+,./:;<=>?@\[\\\]^`{|}~]+$/g, '')
-    .replace(/\*\*/g, '')
-    .replace(/\*/g, '')
-    .replace(/__/g, '')
-    .replace(/__/, '')
-    .trim();
-}
 
 const typeConfig: Record<HustleType, { label: string; emoji: string }> = {
   all: { label: "All Opportunities", emoji: "🎯" },
@@ -84,11 +72,11 @@ export default function HustlesPage() {
       const res = await fetch(`/api/hustles?${params.toString()}`);
       const data = await res.json();
       if (data.success) {
-        // Clean text from existing data
+        // Clean description by removing title duplication and arrow chains
         const cleaned = data.data.map((h: any) => ({
           ...h,
-          title: cleanText(h.title || ''),
-          description: cleanText(h.description || ''),
+          title: h.title || '',
+          description: cleanDescription(h.description || '', h.title || ''),
         }));
         if (append) {
           setHustles(prev => [...prev, ...cleaned]);
@@ -210,7 +198,7 @@ export default function HustlesPage() {
             <h3 className="font-bold text-sm">Highest Paying Opportunity</h3>
           </div>
           <p className="text-sm text-gray-300">
-            {cleanText(sortedHustles[0].title)} pays up to {sortedHustles[0].payRate || `$${sortedHustles[0].hourlyRate}/hr`}
+            {sortedHustles[0].title} pays up to {sortedHustles[0].payRate || `$${sortedHustles[0].hourlyRate}/hr`}
           </p>
         </div>
       )}
@@ -325,7 +313,7 @@ function HustleCard({ hustle }: { hustle: Hustle }) {
               <div className="flex items-center gap-2">
                 <span className="text-lg">{typeEmojis[hustle.type] || "🔍"}</span>
                 <h3 className="font-bold text-lg group-hover:text-accent transition-colors">
-                  {cleanText(hustle.title)}
+                  {hustle.title}
                 </h3>
               </div>
             </div>
@@ -344,7 +332,9 @@ function HustleCard({ hustle }: { hustle: Hustle }) {
           </div>
 
           {/* Description */}
-          <p className="text-sm text-gray-400 mb-3 line-clamp-2">{cleanText(hustle.description)}</p>
+          <p className="text-sm text-gray-400 mb-3 line-clamp-2">
+            {hustle.description ? hustle.description : 'No details available.'}
+          </p>
 
           {/* Details Row */}
           <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-3">
