@@ -308,7 +308,9 @@ def generate_hustle_title(raw_text: str) -> str:
     lines = [line.strip() for line in raw_text.split('\n') if line.strip()]
     if lines:
         title = lines[0]
-        # Clean up title - remove emojis and extra formatting
+        # Clean up title - remove emojis, markdown, and extra formatting
+        title = clean_markdown(title)
+        title = remove_emoji_decorations(title)
         title = re.sub(r'[\U0001F000-\U0001F9FF]', '', title).strip()
         if len(title) > 100:
             title = title[:97] + '...'
@@ -316,14 +318,42 @@ def generate_hustle_title(raw_text: str) -> str:
     return 'Job Opportunity'
 
 
+def clean_markdown(text: str) -> str:
+    """Remove markdown formatting characters from text."""
+    if not text:
+        return ''
+    # Remove bold/italic markers (**, __, _)
+    text = re.sub(r'\*\*', '', text)
+    text = re.sub(r'__', '', text)
+    text = re.sub(r'\*', '', text)
+    text = re.sub(r'(?<!\w)_(?!\w)', '', text)  # standalone underscores not adjacent to word chars
+    # Remove leading/trailing special characters that are used as decoration
+    text = re.sub(r'^[!"#$%&\'()*+,./:;<=>?@\[\\\]^`{|}~\s]+', '', text)
+    text = re.sub(r'[!"#$%&\'()*+,./:;<=>?@\[\\\]^`{|}~\s]+$', '', text)
+    return text.strip()
+
+
+def remove_emoji_decorations(text: str) -> str:
+    """Remove repeated emoji decorations from title."""
+    if not text:
+        return text
+    # Remove leading/trailing emojis and decorative characters
+    text = re.sub(r'^[\U0001F000-\U0001F9FF\u2600-\u26FF\u2700-\u27BF\s]+', '', text)
+    text = re.sub(r'[\U0001F000-\U0001F9FF\u2600-\u26FF\u2700-\u27BF\s]+$', '', text)
+    return text.strip()
+
+
 def generate_title(raw_text: str, category: str) -> str:
     """Generate a deal title from the message."""
     lines = [line.strip() for line in raw_text.split('\n') if line.strip()]
     if lines:
         title = lines[0]
+        # Clean markdown and emoji decorations
+        title = clean_markdown(title)
+        title = remove_emoji_decorations(title)
         if len(title) > 80:
             title = title[:77] + '...'
-        return title
+        return title or f"{category.capitalize()} Deal"
     return f"{category.capitalize()} Deal"
 
 

@@ -18,6 +18,19 @@ interface Deal {
   imageUrl?: string;
 }
 
+// Strip markdown/formatting characters from text
+function cleanText(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/^\*+|^__+|^\^+|^[!"#$%&'()*+,./:;<=>?@\[\\\]^`{|}~]+/g, '')
+    .replace(/\*+$|__+$|\^+$|[!"#$%&'()*+,./:;<=>?@\[\\\]^`{|}~]+$/g, '')
+    .replace(/\*\*/g, '')
+    .replace(/\*/g, '')
+    .replace(/__/g, '')
+    .replace(/__/, '')
+    .trim();
+}
+
 export default function RecentDeals() {
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,8 +46,8 @@ export default function RecentDeals() {
             // Normalize: handle both snake_case (Supabase) and camelCase formats
             const normalized = data.deals.map((d: any) => ({
               _id: String(d.id || d._id || d.telegram_id),
-              title: d.title || 'Untitled Deal',
-              description: d.description || '',
+              title: cleanText(d.title || 'Untitled Deal'),
+              description: cleanText(d.description || ''),
               discount: d.discount || 'Deal',
               category: d.category || 'other',
               location: d.location || d.merchant,

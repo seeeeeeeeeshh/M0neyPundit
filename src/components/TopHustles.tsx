@@ -15,6 +15,19 @@ interface Hustle {
   isFeatured?: boolean;
 }
 
+// Strip markdown/formatting characters from text
+function cleanText(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/^\*+|^__+|^\^+|^[!"#$%&'()*+,./:;<=>?@\[\\\]^`{|}~]+/g, '')
+    .replace(/\*+$|__+$|\^+$|[!"#$%&'()*+,./:;<=>?@\[\\\]^`{|}~]+$/g, '')
+    .replace(/\*\*/g, '')
+    .replace(/\*/g, '')
+    .replace(/__/g, '')
+    .replace(/__/, '')
+    .trim();
+}
+
 export default function TopHustles() {
   const [hustles, setHustles] = useState<Hustle[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,7 +56,7 @@ export default function TopHustles() {
       <div className="card">
         <div className="flex items-center gap-2 mb-4">
           <Briefcase className="w-4 h-4 text-accent" />
-          <h2 className="font-bold">Top Earning Opportunities</h2>
+          <h2 className="font-bold">Side Hustles</h2>
         </div>
         <div className="space-y-3">
           {[1, 2, 3].map(i => (
@@ -63,7 +76,7 @@ export default function TopHustles() {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Briefcase className="w-4 h-4 text-accent" />
-          <h2 className="font-bold">Top Earning Opportunities</h2>
+          <h2 className="font-bold">Side Hustles</h2>
         </div>
         <Link href="/hustles" className="text-xs text-primary hover:text-secondary transition-colors">
           View All →
@@ -87,10 +100,10 @@ export default function TopHustles() {
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-primary">#{index + 1}</span>
                     <h3 className="text-sm font-medium group-hover:text-accent transition-colors">
-                      {hustle.title}
+                      {cleanText(hustle.title)}
                     </h3>
                   </div>
-                  <p className="text-xs text-gray-400 mt-1 line-clamp-2">{hustle.description}</p>
+                  <p className="text-xs text-gray-400 mt-1 line-clamp-2">{cleanText(hustle.description)}</p>
                   <div className="flex items-center gap-3 mt-2">
                     <span className="badge badge-success flex items-center gap-1">
                       <DollarSign className="w-3 h-3" />
