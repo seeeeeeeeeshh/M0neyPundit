@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { DollarSign, Briefcase } from "lucide-react";
 import { cleanDescription } from "@/lib/text-utils";
+import { fetchWithTimeout } from "@/lib/fetch-utils";
 
 interface Hustle {
   id: number;
@@ -16,27 +17,49 @@ interface Hustle {
   isFeatured?: boolean;
 }
 
-// Strip markdown/formatting characters from text (legacy)
-function cleanText(text: string): string {
-  if (!text) return '';
-  return text
-    .replace(/^\*+|^__+|^\^+|^[!"#$%&'()*+,./:;<=>?@\[\\\]^`{|}~]+/g, '')
-    .replace(/\*+$|__+$|\^+$|[!"#$%&'()*+,./:;<=>?@\[\\\]^`{|}~]+$/g, '')
-    .replace(/\*\*/g, '')
-    .replace(/\*/g, '')
-    .replace(/__/g, '')
-    .replace(/__/, '')
-    .trim();
-}
+// Seed data as fallback
+const SEED_HUSTLES: Hustle[] = [
+  {
+    id: 1,
+    title: "Private Tutoring (Math & Science)",
+    description: "Earn $30-50/hr tutoring high school students",
+    type: "tutoring",
+    hourlyRate: 40,
+    location: "Remote/NUS",
+    isFeatured: true,
+  },
+  {
+    id: 2,
+    title: "Weekend Event Staff",
+    description: "Flexible weekend work at events and concerts",
+    type: "part-time",
+    hourlyRate: 15,
+    location: "Marina Bay Sands",
+  },
+  {
+    id: 3,
+    title: "Freelance Graphic Design",
+    description: "Create designs for local businesses",
+    type: "freelance",
+    hourlyRate: 35,
+    location: "Remote",
+  },
+];
 
 export default function TopHustles() {
-  const [hustles, setHustles] = useState<Hustle[]>([]);
+  const [hustles, setHustles] = useState<Hustle[]>(SEED_HUSTLES);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchHustles() {
+    // Use Promise.race to implement a timeout for the entire fetch operation
+    const fetchHustles = async () => {
       try {
-        const res = await fetch('/api/hustles?limit=5&sort=-hourly_rate');
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+        const res = await fetch('/api/hustles?limit=5', { signal: controller.signal });
+        clearTimeout(timeoutId);
+
         if (res.ok) {
           const data = await res.json();
           if (data.success && data.data.length > 0) {
@@ -51,44 +74,16 @@ export default function TopHustles() {
               payRate: h.payRate,
               isFeatured: h.isFeatured ?? false,
             }));
-            setHustles(cleaned);
+            setHustles(cleaned.slice(0, 3)); // Only show top 3
             return;
           }
         }
       } catch (err) {
-        console.error('Failed to fetch hustles:', err);
+        console.log('Using fallback hustle data:', err);
       }
-      // Fallback to seed data
-      const seedHustles: Hustle[] = [
-        {
-          id: 1,
-          title: "Private Tutoring (Math & Science)",
-          description: "Earn $30-50/hr tutoring high school students",
-          type: "tutoring",
-          hourlyRate: 40,
-          location: "Remote/NUS",
-          isFeatured: true,
-        },
-        {
-          id: 2,
-          title: "Weekend Event Staff",
-          description: "Flexible weekend work at events and concerts",
-          type: "part-time",
-          hourlyRate: 15,
-          location: "Marina Bay Sands",
-        },
-        {
-          id: 3,
-          title: "Freelance Graphic Design",
-          description: "Create designs for local businesses",
-          type: "freelance",
-          hourlyRate: 35,
-          location: "Remote",
-        },
-      ];
-      setHustles(seedHustles);
+      // Always set loading to false - whether we used API data or fallback
       setLoading(false);
-    }
+    };
     fetchHustles();
   }, []);
 

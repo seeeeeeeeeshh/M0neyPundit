@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { deals as seedDeals } from "@/lib/seed-data";
 import { Tag, Flame, Search, MapPin, Calendar, RefreshCw } from "lucide-react";
 import { cleanDescription } from "@/lib/text-utils";
@@ -71,14 +71,22 @@ export default function DealsPage() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
-  const PAGE_SIZE = 50;
+  const PAGE_SIZE = 20; // Reduced from 50 for faster initial load
 
-  // Fetch deals from API
-  const fetchDeals = async (pageNum: number, append: boolean = false) => {
+  // Fetch deals from API with timeout
+  const fetchDeals = useCallback(async (pageNum: number, append: boolean = false) => {
     setLoading(true);
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+
       const skip = (pageNum - 1) * PAGE_SIZE;
-      const res = await fetch(`/api/deals?limit=${PAGE_SIZE}&skip=${skip}${selectedCategory !== 'all' ? `&category=${selectedCategory}` : ''}`);
+      const res = await fetch(
+        `/api/deals?limit=${PAGE_SIZE}&skip=${skip}${selectedCategory !== 'all' ? `&category=${selectedCategory}` : ''}`,
+        { signal: controller.signal }
+      );
+      clearTimeout(timeoutId);
+
       if (res.ok) {
         const data = await res.json();
         if (data.deals && data.deals.length > 0) {
@@ -107,15 +115,16 @@ export default function DealsPage() {
         }
       }
     } catch (err) {
-      console.error('Failed to fetch deals:', err);
+      console.log('Using fallback deal data:', err);
     }
     setLoading(false);
-  };
+  }, [selectedCategory, PAGE_SIZE]);
 
   useEffect(() => {
     setPage(1);
+    setApiDeals([]);
     fetchDeals(1);
-  }, [selectedCategory]);
+  }, [fetchDeals]);
 
   const handleLoadMore = () => {
     const nextPage = page + 1;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Search, DollarSign, Clock, MapPin, Star, Zap, Mail } from "lucide-react";
 import { cleanDescription } from "@/lib/text-utils";
 
@@ -42,7 +42,7 @@ export default function HustlesPage() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
-  const PAGE_SIZE = 50;
+  const PAGE_SIZE = 20; // Reduced from 50 for faster initial load
 
   // Extract numeric value from pay rate string
   const extractPayNumber = (payRate: string | undefined): number => {
@@ -60,43 +60,52 @@ export default function HustlesPage() {
     return terms.every(term => lowerText.includes(term));
   };
 
-  const fetchHustles = async (pageNum: number, append: boolean = false) => {
+  const fetchHustles = useCallback(async (pageNum: number, append: boolean = false) => {
     setLoading(true);
     try {
+      // Use AbortController with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+
       const offset = (pageNum - 1) * PAGE_SIZE;
       const params = new URLSearchParams({
         limit: String(PAGE_SIZE),
         offset: String(offset),
       });
       
-      const res = await fetch(`/api/hustles?${params.toString()}`);
-      const data = await res.json();
-      if (data.success) {
-        // Clean description by removing title duplication and arrow chains
-        const cleaned = data.data.map((h: any) => ({
-          ...h,
-          title: h.title || '',
-          description: cleanDescription(h.description || '', h.title || ''),
-        }));
-        if (append) {
-          setHustles(prev => [...prev, ...cleaned]);
-        } else {
-          setHustles(cleaned);
+      const res = await fetch(`/api/hustles?${params.toString()}`, { signal: controller.signal });
+      clearTimeout(timeoutId);
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          // Clean description by removing title duplication and arrow chains
+          const cleaned = data.data.map((h: any) => ({
+            ...h,
+            title: h.title || '',
+            description: cleanDescription(h.description || '', h.title || ''),
+          }));
+          if (append) {
+            setHustles(prev => [...prev, ...cleaned]);
+          } else {
+            setHustles(cleaned);
+          }
+          setTotalCount(data.total || cleaned.length);
+          setHasMore(data.hasMore || false);
+          return;
         }
-        setTotalCount(data.total || cleaned.length);
-        setHasMore(data.hasMore || false);
       }
     } catch (err) {
-      console.error('Failed to fetch hustles:', err);
-    } finally {
-      setLoading(false);
+      console.log('Using fallback hustle data:', err);
     }
-  };
+    setLoading(false);
+  }, [PAGE_SIZE]);
 
   useEffect(() => {
     setPage(1);
+    setHustles([]);
     fetchHustles(1);
-  }, []);
+  }, [fetchHustles, selectedType]);
 
   const handleLoadMore = () => {
     const nextPage = page + 1;

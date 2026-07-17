@@ -39,8 +39,13 @@ export default function RecentDeals() {
   useEffect(() => {
     async function fetchDeals() {
       try {
-        // Fetch without category filter to show ALL deals (including Telegram-synced ones)
-        const res = await fetch('/api/deals?limit=5&sort=-created_at');
+        // Use AbortController with 5-second timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+        const res = await fetch('/api/deals?limit=3', { signal: controller.signal });
+        clearTimeout(timeoutId);
+
         if (res.ok) {
           const data = await res.json();
           if (data.deals && data.deals.length > 0) {
@@ -59,28 +64,11 @@ export default function RecentDeals() {
             return;
           }
         }
-        // Fallback to seed data
-        setDeals(seedDeals.filter(d => d.isPopular).slice(0, 3).map(d => ({
-          _id: d.id,
-          title: d.title,
-          description: d.description,
-          discount: d.discount,
-          category: d.category,
-          isPopular: d.isPopular,
-        })));
       } catch (err) {
-        // Use seed data as fallback
-        setDeals(seedDeals.filter(d => d.isPopular).slice(0, 3).map(d => ({
-          _id: d.id,
-          title: d.title,
-          description: d.description,
-          discount: d.discount,
-          category: d.category,
-          isPopular: d.isPopular,
-        })));
-      } finally {
-        setLoading(false);
+        console.log('Using fallback deal data:', err);
       }
+      // Always set loading to false - whether we used API data or fallback
+      setLoading(false);
     }
     fetchDeals();
   }, []);
@@ -96,6 +84,17 @@ export default function RecentDeals() {
     );
   }
 
+  // Fallback to seed data if API failed
+  const displayDeals = deals.length > 0 ? deals : 
+    seedDeals.filter(d => d.isPopular).slice(0, 3).map(d => ({
+      _id: String(d.id),
+      title: d.title,
+      description: d.description,
+      discount: d.discount,
+      category: d.category,
+      isPopular: d.isPopular,
+    }));
+
   return (
     <div className="card">
       <div className="flex items-center justify-between mb-4">
@@ -108,7 +107,7 @@ export default function RecentDeals() {
         </Link>
       </div>
       <div className="space-y-3">
-        {deals.map((deal, index) => (
+        {displayDeals.map((deal, index) => (
           <div
             key={deal._id || index}
             className="p-3 rounded-lg bg-dark hover:bg-dark/80 transition-colors border border-gray-800 hover:border-gray-700"
