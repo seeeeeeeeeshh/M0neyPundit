@@ -362,11 +362,41 @@ def make_unique_telegram_id(channel_id: str, message_id: str) -> str:
     return f"{channel_id}:{message_id}"
 
 
+def clean_description(raw_text: str) -> str:
+    """Clean the description by removing the title line and arrow chains."""
+    lines = [line.strip() for line in raw_text.split('\n') if line.strip()]
+    if not lines:
+        return ''
+
+    # Skip the first line (it's the title)
+    body_lines = lines[1:] if len(lines) > 1 else []
+
+    if not body_lines:
+        return ''
+
+    # Join remaining lines and clean up arrow chains (➡️)
+    description = '\n'.join(body_lines)
+
+    # Remove arrow chains and their content (e.g., "➡️ $5++ Moutai Lala Soup Base Add-on")
+    description = re.sub(r'\s*➡️\s*[^\n]*', '', description)
+    description = re.sub(r'\s*→\s*[^\n]*', '', description)
+    description = re.sub(r'\s*->\s*[^\n]*', '', description)
+
+    # Clean markdown from description too
+    description = clean_markdown(description)
+
+    # Strip leading/trailing whitespace
+    description = description.strip()
+
+    return description
+
+
 def parse_telegram_message(message_text: str, telegram_id: str, channel_source: str) -> dict:
     """Parse a Telegram message into a structured deal dict (Supabase format)."""
     category = detect_category(message_text)
     discount = extract_discount(message_text)
     title = generate_title(message_text, category)
+    description = clean_description(message_text)
 
     # Extract matched keywords for analytics
     matched_keywords = []
@@ -382,7 +412,7 @@ def parse_telegram_message(message_text: str, telegram_id: str, channel_source: 
         'telegram_id': make_unique_telegram_id(channel_source, telegram_id),
         'channel_id': channel_source,
         'title': title,
-        'description': message_text,
+        'description': description if description else 'Check out this deal!',
         'discount': discount or 'Check deal',
         'category': category,
         'merchant': extract_merchant(message_text),
@@ -406,6 +436,7 @@ def parse_hustle_message(message_text: str, telegram_id: str, channel_source: st
     deadline = extract_job_deadline(message_text)
     contact = extract_contact_info(message_text)
     url = extract_url(message_text) or contact
+    description = clean_description(message_text)
     
     # Extract matched keywords for analytics
     matched_keywords = []
@@ -419,7 +450,7 @@ def parse_hustle_message(message_text: str, telegram_id: str, channel_source: st
         'telegram_id': make_unique_telegram_id(channel_source, telegram_id),
         'channel_id': channel_source,
         'title': title,
-        'description': message_text,
+        'description': description if description else 'Check out this opportunity!',
         'category': hustle_type,
         'pay_rate': pay_rate or 'See posting',
         'deadline': deadline,

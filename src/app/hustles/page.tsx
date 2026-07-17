@@ -20,6 +20,19 @@ interface Hustle {
 
 type HustleType = "all" | "part-time" | "freelance" | "tutoring" | "gig" | "full-time" | "internship" | "remote";
 
+// Strip markdown/formatting characters from text
+function cleanText(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/^\*+|^__+|^\^+|^[!"#$%&'()*+,./:;<=>?@\[\\\]^`{|}~]+/g, '')
+    .replace(/\*+$|__+$|\^+$|[!"#$%&'()*+,./:;<=>?@\[\\\]^`{|}~]+$/g, '')
+    .replace(/\*\*/g, '')
+    .replace(/\*/g, '')
+    .replace(/__/g, '')
+    .replace(/__/, '')
+    .trim();
+}
+
 const typeConfig: Record<HustleType, { label: string; emoji: string }> = {
   all: { label: "All Opportunities", emoji: "🎯" },
   "part-time": { label: "Part-Time", emoji: "💼" },
@@ -71,12 +84,18 @@ export default function HustlesPage() {
       const res = await fetch(`/api/hustles?${params.toString()}`);
       const data = await res.json();
       if (data.success) {
+        // Clean text from existing data
+        const cleaned = data.data.map((h: any) => ({
+          ...h,
+          title: cleanText(h.title || ''),
+          description: cleanText(h.description || ''),
+        }));
         if (append) {
-          setHustles(prev => [...prev, ...data.data]);
+          setHustles(prev => [...prev, ...cleaned]);
         } else {
-          setHustles(data.data);
+          setHustles(cleaned);
         }
-        setTotalCount(data.total || data.data.length);
+        setTotalCount(data.total || cleaned.length);
         setHasMore(data.hasMore || false);
       }
     } catch (err) {
@@ -191,7 +210,7 @@ export default function HustlesPage() {
             <h3 className="font-bold text-sm">Highest Paying Opportunity</h3>
           </div>
           <p className="text-sm text-gray-300">
-            {sortedHustles[0].title} pays up to {sortedHustles[0].payRate || `$${sortedHustles[0].hourlyRate}/hr`}
+            {cleanText(sortedHustles[0].title)} pays up to {sortedHustles[0].payRate || `$${sortedHustles[0].hourlyRate}/hr`}
           </p>
         </div>
       )}
@@ -306,7 +325,7 @@ function HustleCard({ hustle }: { hustle: Hustle }) {
               <div className="flex items-center gap-2">
                 <span className="text-lg">{typeEmojis[hustle.type] || "🔍"}</span>
                 <h3 className="font-bold text-lg group-hover:text-accent transition-colors">
-                  {hustle.title}
+                  {cleanText(hustle.title)}
                 </h3>
               </div>
             </div>
@@ -325,7 +344,7 @@ function HustleCard({ hustle }: { hustle: Hustle }) {
           </div>
 
           {/* Description */}
-          <p className="text-sm text-gray-400 mb-3 line-clamp-2">{hustle.description}</p>
+          <p className="text-sm text-gray-400 mb-3 line-clamp-2">{cleanText(hustle.description)}</p>
 
           {/* Details Row */}
           <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-3">
